@@ -36,3 +36,7 @@ func (app *App) Run() error {
 	}
 	return nil
 }
+
+// func (app *App) SetupRoutes() error {
+
+// }
