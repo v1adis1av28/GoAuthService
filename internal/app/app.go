@@ -2,6 +2,7 @@ package app
 
 import (
 	"GoAuthService/internal/database"
+	"GoAuthService/internal/handlers"
 	"log/slog"
 
 	"github.com/gin-gonic/gin"
@@ -34,9 +35,20 @@ func (app *App) Run() error {
 		app.Logger.Error("Failed to start server", "error", err)
 		return err
 	}
+
+	if err := app.SetupRoutes(); err != nil {
+		app.Logger.Error("Failed to setup server routes", "error", err)
+		return err
+	}
+	app.Logger.Info("Server succesfully setup routes!")
 	return nil
 }
 
-// func (app *App) SetupRoutes() error {
+func (app *App) SetupRoutes() error {
+	app.Router.POST("/logout", handlers.Logout())
+	app.Router.GET("/token", handlers.GetTokenPair())
+	app.Router.POST("/update", handlers.UpdateTokens())
+	app.Router.GET("/guid", handlers.GetUserGUID())
 
-// }
+	return nil
+}
