@@ -58,7 +58,8 @@ func (h *UserHandler) GetTokenPair(c *gin.Context) {
 
 	if err != nil {
 		if err.Error() == "user with that uuid not found" {
-			_, tokens, createErr := h.service.CreateNewUser(userGuid)
+			//передаем заголовок user-agent для запрета обновления токенов при изменении этого заголовка
+			_, tokens, createErr := h.service.CreateNewUser(userGuid, c.GetHeader("User-Agent"))
 			if createErr != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create user", "error": createErr.Error()})
 				return
@@ -85,6 +86,7 @@ func (h *UserHandler) GetTokenPair(c *gin.Context) {
 }
 
 // функция для обновления токенов
+// в клаимс надо наверное класть user-agent и сравнивать
 func UpdateTokens() {
 
 }

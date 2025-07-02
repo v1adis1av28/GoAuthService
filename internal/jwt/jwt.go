@@ -1,6 +1,8 @@
 package jwt
 
 import (
+	"crypto/sha256"
+	"encoding/base64"
 	"fmt"
 	"log"
 	"time"
@@ -12,11 +14,13 @@ import (
 var jwtSecretKey = []byte("sss")
 
 // Возвращаем строку jwt токена по совместительству который является access токеном
-func GenerateNewJwtKey(sub string) (string, error) {
+func GenerateNewJwtKey(sub, userAgentInfo string) (string, error) {
+	hashedUserAgent := sha256.Sum256([]byte(userAgentInfo))
 	//Генерируем полезную информацию в токене
 	payload := jwt.MapClaims{
 		"sub": sub,
 		"exp": time.Now().Add(time.Minute * 5).Unix(),
+		"ua":  base64.StdEncoding.EncodeToString(hashedUserAgent[:]),
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS512, payload)

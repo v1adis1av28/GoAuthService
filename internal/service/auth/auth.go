@@ -24,8 +24,8 @@ func (u *UserService) GetUserByUUID(uuid string) (*models.User, error) {
 	return u.repo.FindUserByUUID(uuid)
 }
 
-func (u *UserService) CreateNewUser(userGuid string) (*models.User, *models.Tokens, error) {
-	accessToken, err := jwt.GenerateNewJwtKey(userGuid)
+func (u *UserService) CreateNewUser(userGuid, userAgentInfo string) (*models.User, *models.Tokens, error) {
+	accessToken, err := jwt.GenerateNewJwtKey(userGuid, userAgentInfo)
 	if err != nil {
 		return nil, nil, err
 	}
