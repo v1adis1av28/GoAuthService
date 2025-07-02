@@ -63,9 +63,9 @@ func (app *App) Run(h *handlers.UserHandler) error {
 
 func (app *App) SetupRoutes(h *handlers.UserHandler) error {
 	//мб стоит добавить префикс /auth?
-	//	app.Router.POST("/logout", handlers.Logout())
+	app.Router.POST("/logout", h.Logout)
 	app.Router.GET("/token", h.GetTokenPair)
-	//	app.Router.POST("/update", handlers.UpdateTokens())
+	//	app.Router.POST("/refresh", handlers.UpdateTokens())
 	//	app.Router.GET("/guid", handlers.GetUserGUID())
 
 	return nil

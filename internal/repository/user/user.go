@@ -15,6 +15,18 @@ type UserRepository struct {
 	db *pgx.Conn
 }
 
+func (ur *UserRepository) DeleteRefreshToken(guid string) error {
+	sqlStatement := "UPDATE users SET hashed_refresh_token = '' WHERE guid = $1"
+	result, err := ur.db.Exec(context.Background(), sqlStatement, guid)
+	if err != nil {
+		return fmt.Errorf("failed to delete refresh token")
+	}
+	if result.RowsAffected() == 0 {
+		return fmt.Errorf("wrong uuid")
+	}
+	return nil
+}
+
 func (ur *UserRepository) UpdateRefreshToken(guid string, hashed_token string) error {
 	sqlStatemnt := "UPDATE USERS SET HASHED_REFRESH_TOKEN = $1 WHERE guid = $2"
 	check, err := ur.db.Exec(context.Background(), sqlStatemnt, hashed_token, guid)

@@ -25,14 +25,10 @@ func (u *UserService) GetUserByUUID(uuid string) (*models.User, error) {
 }
 
 func (u *UserService) CreateNewUser(userGuid string) (*models.User, *models.Tokens, error) {
-	//Генерим uuid
-	//id := uuid.New()
-	//Генерим jwt
 	accessToken, err := jwt.GenerateNewJwtKey(userGuid)
 	if err != nil {
 		return nil, nil, err
 	}
-	// Генерим refresh
 	refreshToken, err := generateRefreshToken()
 	if err != nil {
 		return nil, nil, err
@@ -50,6 +46,10 @@ func (u *UserService) CreateNewUser(userGuid string) (*models.User, *models.Toke
 		return nil, nil, err
 	}
 	return user, tokens, nil
+}
+
+func (u *UserService) Logout(guid string) error {
+	return u.repo.DeleteRefreshToken(guid)
 }
 
 func generateRefreshToken() (string, error) {

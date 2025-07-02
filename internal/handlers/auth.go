@@ -1,9 +1,11 @@
 package handlers
 
 import (
+	"GoAuthService/internal/jwt"
 	"GoAuthService/internal/service/auth"
 	"net/http"
 	"regexp"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -18,7 +20,25 @@ func NewUserHandler(service *auth.UserService) *UserHandler {
 	return &UserHandler{service: service}
 }
 
-func Logout() {
+func (h *UserHandler) Logout(c *gin.Context) {
+	accessToken := strings.TrimPrefix(c.GetHeader("Authorization"), "Bearer ")
+	if accessToken == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"message": "access token not found"})
+		return
+	}
+
+	uuid, err := jwt.ExtractUUIDFromClaims(accessToken)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
+
+	err = h.service.Logout(uuid)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "Logout successfuly!"})
 
 }
 
