@@ -16,7 +16,6 @@ var jwtSecretKey = []byte("sss")
 // Возвращаем строку jwt токена по совместительству который является access токеном
 func GenerateNewJwtKey(sub, userAgentInfo string) (string, error) {
 	hashedUserAgent := sha256.Sum256([]byte(userAgentInfo))
-	//Генерируем полезную информацию в токене
 	payload := jwt.MapClaims{
 		"sub": sub,
 		"exp": time.Now().Add(time.Minute * 5).Unix(),
@@ -51,4 +50,22 @@ func ExtractUUIDFromClaims(tokenStr string) (string, error) {
 		log.Printf("Invalid JWT Token")
 		return "", fmt.Errorf("invalid jwt token")
 	}
+}
+
+func ExtractUAFromClaims(tokenStr string) (string, error) {
+	token, err := jwt.Parse(tokenStr, func(token *jwt.Token) (interface{}, error) {
+		return jwtSecretKey, nil
+	})
+	if err != nil {
+		return "", err
+	}
+
+	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
+		ua, ok := claims["ua"].(string)
+		if !ok {
+			return "", fmt.Errorf("User Agent claim not found")
+		}
+		return ua, nil
+	}
+	return "", fmt.Errorf("invalid token")
 }

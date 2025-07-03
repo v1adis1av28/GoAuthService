@@ -16,6 +16,10 @@ type UserService struct {
 	repo *user.UserRepository
 }
 
+func (u *UserService) UpdateIp(guid string, currentIp string) error {
+	return u.repo.UpdateIp(guid, currentIp)
+}
+
 func NewUserService(repo *user.UserRepository) *UserService {
 	return &UserService{repo: repo}
 }
@@ -24,7 +28,7 @@ func (u *UserService) GetUserByUUID(uuid string) (*models.User, error) {
 	return u.repo.FindUserByUUID(uuid)
 }
 
-func (u *UserService) CreateNewUser(userGuid, userAgentInfo string) (*models.User, *models.Tokens, error) {
+func (u *UserService) CreateNewUser(userGuid, userAgentInfo, ip string) (*models.User, *models.Tokens, error) {
 	accessToken, err := jwt.GenerateNewJwtKey(userGuid, userAgentInfo)
 	if err != nil {
 		return nil, nil, err
@@ -41,7 +45,7 @@ func (u *UserService) CreateNewUser(userGuid, userAgentInfo string) (*models.Use
 		HashedRefreshToken: refreshToken,
 	}
 	hashedRefreshToken, _ := bcrypt.GenerateFromPassword([]byte(refreshToken), bcrypt.DefaultCost)
-	err = u.repo.CreateNewUser(user.GUID, string(hashedRefreshToken))
+	err = u.repo.CreateNewUser(user.GUID, string(hashedRefreshToken), ip)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -61,18 +65,15 @@ func generateRefreshToken() (string, error) {
 	return base64.StdEncoding.EncodeToString(token), nil
 }
 
-func (u *UserService) GenerateNewTokenPair(guid string) (string, string, error) {
+func (u *UserService) GenerateNewTokenPair(guid, userAgent string) (string, string, error) {
 	refreshToken, err := generateRefreshToken()
 	if err != nil {
 		return "", "", err
 	}
 
-	hashedRefreshToken, err := bcrypt.GenerateFromPassword([]byte(refreshToken), bcrypt.DefaultCost)
-	if err != nil {
-		return "", "", err
-	}
+	hashedRefreshToken, _ := bcrypt.GenerateFromPassword([]byte(refreshToken), bcrypt.DefaultCost)
 
-	accessToken, err := jwt.GenerateNewJwtKey(guid)
+	accessToken, err := jwt.GenerateNewJwtKey(guid, userAgent)
 	if err != nil {
 		return "", "", err
 	}
