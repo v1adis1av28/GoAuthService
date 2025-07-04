@@ -1,17 +1,16 @@
-FROM golang:alpine AS builder
+FROM golang:1.24.2-alpine AS builder
 
 WORKDIR /app
-
-COPY ../go.mod ../go.sum ./
-RUN go mod download
-
-COPY .. .
-
-RUN CGO_ENABLED=0 GOOS=linux go build -o myapp ./cmd/main.go
+COPY . .
+RUN go build -o /app/authservice ./cmd
 
 FROM alpine:latest
-WORKDIR /root/
-COPY --from=builder /app/myapp .
-COPY --from=builder /app/.env . 
+WORKDIR /app
+
+RUN mkdir -p /app/configs
+
+COPY --from=builder /app/authservice .
+COPY --from=builder /app/configs/dev.yml /app/configs/dev.yml
+
 EXPOSE 8080
-CMD ["./myapp"]
+CMD ["./authservice"]

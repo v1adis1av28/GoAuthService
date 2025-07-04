@@ -1,0 +1,6 @@
+db:
+  url: "postgres://postgres:postgres@db:5432/auth?sslmode=disable"
+server:
+  port: "8080"
+jwt:
+  secret: "jwtSecret"

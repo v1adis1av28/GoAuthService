@@ -10,8 +10,11 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-// var jwtSecretKey = []byte(os.Getenv("JWT_SECRET"))
-var jwtSecretKey = []byte("sss")
+var jwtSecretKey []byte
+
+func Init(secretKey string) {
+	jwtSecretKey = []byte(secretKey)
+}
 
 func GenerateNewJwtKey(sub, userAgentInfo string) (string, error) {
 	hashedUserAgent := sha256.Sum256([]byte(userAgentInfo))
