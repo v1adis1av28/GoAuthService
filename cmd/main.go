@@ -1,6 +1,7 @@
 package main
 
 import (
+	_ "GoAuthService/docs"
 	"GoAuthService/internal/app"
 	"GoAuthService/internal/config"
 	"GoAuthService/internal/database"
@@ -13,6 +14,14 @@ import (
 	"os"
 )
 
+// @title Go Auth Service
+// @description Реализация части сервиса авторизации с использованием JWT, access/refresh токенов
+// @host localhost:8080
+// @BasePath /
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
+// @schemes http
 func main() {
 	cfg, err := config.Load()
 	if err != nil {

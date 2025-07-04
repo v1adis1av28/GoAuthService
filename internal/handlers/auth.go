@@ -28,7 +28,26 @@ func NewUserHandler(service *auth.UserService) *UserHandler {
 	return &UserHandler{service: service}
 }
 
+// @Summary Выйти из системы
+// @Description Инвалидирует токены пользователя.
+// @Tags Auth
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Success 200 {object} object{message=string}
+// @Failure 401 {object} models.ErrorResponse
+// @Router /logout [post]
 func (h *UserHandler) Logout(c *gin.Context) {
+	if len(c.GetHeader("Authorization")) == 0 {
+		c.JSON(http.StatusUnauthorized, gin.H{"message": "you are not authorize"})
+		return
+	}
+
+	if !strings.HasPrefix(c.GetHeader("Authorization"), "Bearer ") {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token format, token should have `Bearer ` prefix"})
+		return
+	}
+
 	accessToken := strings.TrimPrefix(c.GetHeader("Authorization"), "Bearer ")
 	if accessToken == "" {
 		c.JSON(http.StatusUnauthorized, gin.H{"message": "access token not found"})
@@ -50,6 +69,17 @@ func (h *UserHandler) Logout(c *gin.Context) {
 
 }
 
+// @Summary Получить пару токенов (access + refresh)
+// @Description Эндпоинт для получения пары токенов для авторизации на сервисе. В ответе возвращаются пара токенов, а accessToken также записывается  в заголовок `Authorization`.
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Param guid query string true "User GUID" format(uuid) example(16763be4-6022-406e-a950-fcd5018633ca)
+// @Success 200 {object} models.Tokens
+// @Header 200 {string} Authorization "JWT access token"
+// @Failure 400 {object} models.ErrorResponse
+// @Failure 500 {object} models.ErrorResponse
+// @Router /token [get]
 func (h *UserHandler) GetTokenPair(c *gin.Context) {
 	userGuid := c.Query("guid")
 	if len(userGuid) != 36 {
@@ -94,6 +124,17 @@ func (h *UserHandler) GetTokenPair(c *gin.Context) {
 	})
 }
 
+// @Summary Обновить пару токенов
+// @Description Требует валидного access token и полученный вместе с ним refresh token. Проверяет изменение User-Agent или IP (post запрос на /changeIp при изменении ip). В теле запроса надо указать {"refresh_token" : токен полученный из /token}
+// @Tags Auth
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Param request body object true "Refresh token" { "refresh_token": "string" }
+// @Success 200 {object} models.Tokens
+// @Failure 403 {object} models.ErrorResponse
+// @Failure 500 {object} models.ErrorResponse
+// @Router /refresh [post]
 func (h *UserHandler) RefreshTokens(c *gin.Context) {
 	accessToken := strings.TrimPrefix(c.GetHeader("Authorization"), "Bearer ")
 	if accessToken == "" {
@@ -196,7 +237,21 @@ func (h *UserHandler) UpdateIp(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "ip was successfuly updated"})
 }
 
+// @Summary Получить GUID пользователя (защищенный роут)
+// @Description Требует валидного accessToken. В результате возвращает uuid под которым пользователь получал токены
+// @Tags User
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Success 200 {object} object{uuid=string}
+// @Failure 401 {object} models.ErrorResponse
+// @Router /guid [get]
 func (h *UserHandler) GetUserGUID(c *gin.Context) {
+	if !strings.HasPrefix(c.GetHeader("Authorization"), "Bearer ") {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token format, token should have `Bearer ` prefix"})
+		return
+	}
+
 	accessToken := strings.TrimPrefix(c.GetHeader("Authorization"), "Bearer ")
 	if accessToken == "" {
 		c.JSON(http.StatusUnauthorized, gin.H{"message": "access token not found"})

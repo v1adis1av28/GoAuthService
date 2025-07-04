@@ -20,7 +20,7 @@ func GenerateNewJwtKey(sub, userAgentInfo string) (string, error) {
 	hashedUserAgent := sha256.Sum256([]byte(userAgentInfo))
 	payload := jwt.MapClaims{
 		"sub": sub,
-		"exp": time.Now().Add(time.Minute * 1).Unix(),
+		"exp": time.Now().Add(time.Minute * 5).Unix(),
 		"ua":  base64.StdEncoding.EncodeToString(hashedUserAgent[:]),
 	}
 

@@ -1,12 +1,15 @@
 package app
 
 import (
+	_ "GoAuthService/docs"
 	"GoAuthService/internal/database"
 	"GoAuthService/internal/handlers"
 	"log/slog"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
 type App struct {
@@ -68,6 +71,6 @@ func (app *App) SetupRoutes(h *handlers.UserHandler) error {
 	app.Router.POST("/changeIp", h.UpdateIp)
 	app.Router.POST("/refresh", h.RefreshTokens)
 	app.Router.GET("/guid", handlers.AuthMiddleware(), h.GetUserGUID)
-
+	app.Router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	return nil
 }
