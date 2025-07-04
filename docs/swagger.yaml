@@ -1,0 +1,152 @@
+basePath: /
+definitions:
+  models.ErrorResponse:
+    properties:
+      info:
+        example: additional info
+        type: string
+      message:
+        example: error description
+        type: string
+    type: object
+  models.Tokens:
+    properties:
+      access_token:
+        type: string
+      refresh_token:
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: Реализация части сервиса авторизации с использованием JWT, access/refresh
+    токенов
+  title: Go Auth Service
+paths:
+  /guid:
+    get:
+      consumes:
+      - application/json
+      description: Требует валидного accessToken. В результате возвращает uuid под
+        которым пользователь получал токены
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            properties:
+              uuid:
+                type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Получить GUID пользователя (защищенный роут)
+      tags:
+      - User
+  /logout:
+    post:
+      consumes:
+      - application/json
+      description: Инвалидирует токены пользователя.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            properties:
+              message:
+                type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Выйти из системы
+      tags:
+      - Auth
+  /refresh:
+    post:
+      consumes:
+      - application/json
+      description: 'Требует валидного access token и полученный вместе с ним refresh
+        token. Проверяет изменение User-Agent или IP (post запрос на /changeIp при
+        изменении ip). В теле запроса надо указать {"refresh_token" : токен полученный
+        из /token}'
+      parameters:
+      - description: Refresh token
+        in: body
+        name: request
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Tokens'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Обновить пару токенов
+      tags:
+      - Auth
+  /token:
+    get:
+      consumes:
+      - application/json
+      description: Эндпоинт для получения пары токенов для авторизации на сервисе.
+        В ответе возвращаются пара токенов, а accessToken также записывается  в заголовок
+        `Authorization`.
+      parameters:
+      - description: User GUID
+        example: 16763be4-6022-406e-a950-fcd5018633ca
+        format: uuid
+        in: query
+        name: guid
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          headers:
+            Authorization:
+              description: JWT access token
+              type: string
+          schema:
+            $ref: '#/definitions/models.Tokens'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Получить пару токенов (access + refresh)
+      tags:
+      - Auth
+securityDefinitions:
+  BearerAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"
