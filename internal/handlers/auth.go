@@ -28,14 +28,15 @@ func NewUserHandler(service *auth.UserService) *UserHandler {
 	return &UserHandler{service: service}
 }
 
-// @Summary Выйти из системы
-// @Description Инвалидирует токены пользователя.
+// @Summary Выход из системы
+// @Description Инвалидация текущих токенов пользователя
 // @Tags Auth
 // @Security BearerAuth
 // @Accept json
 // @Produce json
-// @Success 200 {object} object{message=string}
-// @Failure 401 {object} models.ErrorResponse
+// @Success 200 {object} object{message=string} "Пример: {"message":"Logout successfuly!"}"
+// @Failure 401 {object} models.ErrorResponse "Пример: {"message":"access token not found"}"
+// @Failure 500 {object} models.ErrorResponse "Пример: {"message":"logout failed"}"
 // @Router /logout [post]
 func (h *UserHandler) Logout(c *gin.Context) {
 	if len(c.GetHeader("Authorization")) == 0 {
@@ -69,16 +70,16 @@ func (h *UserHandler) Logout(c *gin.Context) {
 
 }
 
-// @Summary Получить пару токенов (access + refresh)
-// @Description Эндпоинт для получения пары токенов для авторизации на сервисе. В ответе возвращаются пара токенов, а accessToken также записывается  в заголовок `Authorization`.
+// @Summary Получить пару токенов
+// @Description Получение access и refresh токенов. Если пользователя нет - он создается.
 // @Tags Auth
 // @Accept json
 // @Produce json
 // @Param guid query string true "User GUID" format(uuid) example(16763be4-6022-406e-a950-fcd5018633ca)
-// @Success 200 {object} models.Tokens
-// @Header 200 {string} Authorization "JWT access token"
-// @Failure 400 {object} models.ErrorResponse
-// @Failure 500 {object} models.ErrorResponse
+// @Success 200 {object} models.Tokens "Пример: {"access_token":"eyJ...","refresh_token":"bmV3IHJlZnJlc..."}"
+// @Header 200 {string} Authorization "Пример: Bearer eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9..."
+// @Failure 400 {object} models.ErrorResponse "Пример: {"message":"Wrong uuid input","info":"you must enter a 36-character uuid"}"
+// @Failure 500 {object} models.ErrorResponse "Пример: {"message":"Database error","error":"connection refused"}"
 // @Router /token [get]
 func (h *UserHandler) GetTokenPair(c *gin.Context) {
 	userGuid := c.Query("guid")
@@ -124,16 +125,17 @@ func (h *UserHandler) GetTokenPair(c *gin.Context) {
 	})
 }
 
-// @Summary Обновить пару токенов
-// @Description Требует валидного access token и полученный вместе с ним refresh token. Проверяет изменение User-Agent или IP (post запрос на /changeIp при изменении ip). В теле запроса надо указать {"refresh_token" : токен полученный из /token}
+// @Summary Обновить токены
+// @Description Обновление пары токенов по refresh токену
 // @Tags Auth
 // @Security BearerAuth
 // @Accept json
 // @Produce json
-// @Param request body object true "Refresh token" { "refresh_token": "string" }
-// @Success 200 {object} models.Tokens
-// @Failure 403 {object} models.ErrorResponse
-// @Failure 500 {object} models.ErrorResponse
+// @Param request body models.Tokens true "Refresh token"
+// @Success 200 {object} models.Tokens "Пример: {"access_token":"eyJ...","refresh_token":"bmV3IHJlZnJlc..."}"
+// @Failure 403 {object} models.ErrorResponse "Пример: {"message":"wrong pair of tokens"}"
+// @Failure 409 {object} models.ErrorResponse "Пример: {"message":"error you changed user-agent content"}"
+// @Failure 500 {object} models.ErrorResponse "Пример: {"message":"token generation error"}"
 // @Router /refresh [post]
 func (h *UserHandler) RefreshTokens(c *gin.Context) {
 	accessToken := strings.TrimPrefix(c.GetHeader("Authorization"), "Bearer ")
@@ -237,14 +239,15 @@ func (h *UserHandler) UpdateIp(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "ip was successfuly updated"})
 }
 
-// @Summary Получить GUID пользователя (защищенный роут)
-// @Description Требует валидного accessToken. В результате возвращает uuid под которым пользователь получал токены
+// @Summary Получить GUID
+// @Description Получение GUID текущего авторизованного пользователя
 // @Tags User
 // @Security BearerAuth
 // @Accept json
 // @Produce json
-// @Success 200 {object} object{uuid=string}
-// @Failure 401 {object} models.ErrorResponse
+// @Success 200 {object} object "Пример: {"uuid":"16763be4-6022-406e-a950-fcd5018633ca"}"
+// @Failure 401 {object} models.ErrorResponse "Пример: {"error":"Invalid token format, token should have `Bearer ` prefix"}"
+// @Failure 500 {object} models.ErrorResponse "Пример: {"message":"failed to extract claims"}"
 // @Router /guid [get]
 func (h *UserHandler) GetUserGUID(c *gin.Context) {
 	if !strings.HasPrefix(c.GetHeader("Authorization"), "Bearer ") {
