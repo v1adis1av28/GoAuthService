@@ -67,7 +67,7 @@ func (app *App) SetupRoutes(h *handlers.UserHandler) error {
 	app.Router.GET("/token", h.GetTokenPair)
 	app.Router.POST("/changeIp", h.UpdateIp)
 	app.Router.POST("/refresh", h.RefreshTokens)
-	//	app.Router.GET("/guid", handlers.GetUserGUID())
+	app.Router.GET("/guid", handlers.AuthMiddleware(), h.GetUserGUID)
 
 	return nil
 }

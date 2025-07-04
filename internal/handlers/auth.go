@@ -196,8 +196,18 @@ func (h *UserHandler) UpdateIp(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "ip was successfuly updated"})
 }
 
-// TODO дореализовать на получение GUID текущего пользователя (роут должен быть защищен);
-// функция получения GUID пользователя
-func GetUserGUID() {
+func (h *UserHandler) GetUserGUID(c *gin.Context) {
+	accessToken := strings.TrimPrefix(c.GetHeader("Authorization"), "Bearer ")
+	if accessToken == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"message": "access token not found"})
+		return
+	}
 
+	uuid, err := jwt.ExtractUUIDFromClaims(accessToken)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"uuid": uuid})
 }

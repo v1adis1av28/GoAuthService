@@ -13,12 +13,11 @@ import (
 // var jwtSecretKey = []byte(os.Getenv("JWT_SECRET"))
 var jwtSecretKey = []byte("sss")
 
-// Возвращаем строку jwt токена по совместительству который является access токеном
 func GenerateNewJwtKey(sub, userAgentInfo string) (string, error) {
 	hashedUserAgent := sha256.Sum256([]byte(userAgentInfo))
 	payload := jwt.MapClaims{
 		"sub": sub,
-		"exp": time.Now().Add(time.Minute * 5).Unix(),
+		"exp": time.Now().Add(time.Minute * 1).Unix(),
 		"ua":  base64.StdEncoding.EncodeToString(hashedUserAgent[:]),
 	}
 
@@ -68,4 +67,26 @@ func ExtractUAFromClaims(tokenStr string) (string, error) {
 		return ua, nil
 	}
 	return "", fmt.Errorf("invalid token")
+}
+
+func CheckIsExpiredToken(tokenString string) (bool, error) {
+	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+		return jwtSecretKey, nil
+	})
+	if err != nil {
+		return false, err
+	}
+	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
+		expVal, ok := claims["exp"].(float64)
+		if !ok {
+			return false, fmt.Errorf("exp claim not found or invalid")
+		}
+
+		expTime := time.Unix(int64(expVal), 0)
+		if time.Now().After(expTime) {
+			return true, nil
+		}
+		return false, nil
+	}
+	return false, fmt.Errorf("token was expired")
 }
