@@ -1,5 +1,5 @@
 # GoAuthService
-Part of authentication services using golang and refresh/access tokens
+Реализация части сервиса авторизации с примененим JWT и refresh/access токенов
 
 ## Установка и запуск
 
