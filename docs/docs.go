@@ -22,7 +22,8 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Требует валидного accessToken. В результате возвращает uuid под которым пользователь получал токены",
+
+                "description": "Получение GUID текущего авторизованного пользователя",
                 "consumes": [
                     "application/json"
                 ],
@@ -32,21 +33,23 @@ const docTemplate = `{
                 "tags": [
                     "User"
                 ],
-                "summary": "Получить GUID пользователя (защищенный роут)",
+                "summary": "Получить GUID",
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "Пример: {\"uuid\":\"16763be4-6022-406e-a950-fcd5018633ca\"}",
                         "schema": {
-                            "type": "object",
-                            "properties": {
-                                "uuid": {
-                                    "type": "string"
-                                }
-                            }
+                            "type": "object"
                         }
                     },
                     "401": {
-                        "description": "Unauthorized",
+                        "description": "Пример: {\"error\":\"Invalid token format, token should have ` + "`" + `Bearer ` + "`" + ` prefix\"}",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Пример: {\"message\":\"failed to extract claims\"}",
+
                         "schema": {
                             "$ref": "#/definitions/models.ErrorResponse"
                         }
@@ -61,7 +64,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Инвалидирует токены пользователя.",
+                "description": "Инвалидация текущих токенов пользователя",
                 "consumes": [
                     "application/json"
                 ],
@@ -71,10 +74,11 @@ const docTemplate = `{
                 "tags": [
                     "Auth"
                 ],
-                "summary": "Выйти из системы",
+
+                "summary": "Выход из системы",
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "Пример: {\"message\":\"Logout successfuly!\"}",
                         "schema": {
                             "type": "object",
                             "properties": {
@@ -85,7 +89,14 @@ const docTemplate = `{
                         }
                     },
                     "401": {
-                        "description": "Unauthorized",
+
+                        "description": "Пример: {\"message\":\"access token not found\"}",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Пример: {\"message\":\"logout failed\"}",
                         "schema": {
                             "$ref": "#/definitions/models.ErrorResponse"
                         }
@@ -100,7 +111,8 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Требует валидного access token и полученный вместе с ним refresh token. Проверяет изменение User-Agent или IP (post запрос на /changeIp при изменении ip). В теле запроса надо указать {\"refresh_token\" : токен полученный из /token}",
+                "description": "Обновление пары токенов по refresh токену",
+
                 "consumes": [
                     "application/json"
                 ],
@@ -110,7 +122,7 @@ const docTemplate = `{
                 "tags": [
                     "Auth"
                 ],
-                "summary": "Обновить пару токенов",
+                "summary": "Обновить токены",
                 "parameters": [
                     {
                         "description": "Refresh token",
@@ -118,25 +130,31 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "type": "object"
+                            "$ref": "#/definitions/models.Tokens"
                         }
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "Пример: {\"access_token\":\"eyJ...\",\"refresh_token\":\"bmV3IHJlZnJlc...\"}",
                         "schema": {
                             "$ref": "#/definitions/models.Tokens"
                         }
                     },
                     "403": {
-                        "description": "Forbidden",
+                        "description": "Пример: {\"message\":\"wrong pair of tokens\"}",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Пример: {\"message\":\"error you changed user-agent content\"}",
                         "schema": {
                             "$ref": "#/definitions/models.ErrorResponse"
                         }
                     },
                     "500": {
-                        "description": "Internal Server Error",
+                        "description": "Пример: {\"message\":\"token generation error\"}",
                         "schema": {
                             "$ref": "#/definitions/models.ErrorResponse"
                         }
@@ -146,7 +164,7 @@ const docTemplate = `{
         },
         "/token": {
             "get": {
-                "description": "Эндпоинт для получения пары токенов для авторизации на сервисе. В ответе возвращаются пара токенов, а accessToken также записывается  в заголовок ` + "`" + `Authorization` + "`" + `.",
+                "description": "Получение access и refresh токенов. Если пользователя нет - он создается.",
                 "consumes": [
                     "application/json"
                 ],
@@ -156,7 +174,7 @@ const docTemplate = `{
                 "tags": [
                     "Auth"
                 ],
-                "summary": "Получить пару токенов (access + refresh)",
+                "summary": "Получить пару токенов",
                 "parameters": [
                     {
                         "type": "string",
@@ -170,25 +188,26 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "Пример: {\"access_token\":\"eyJ...\",\"refresh_token\":\"bmV3IHJlZnJlc...\"}",
                         "schema": {
                             "$ref": "#/definitions/models.Tokens"
                         },
                         "headers": {
                             "Authorization": {
                                 "type": "string",
-                                "description": "JWT access token"
+                                "description": "Пример: Bearer eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9..."
                             }
                         }
                     },
                     "400": {
-                        "description": "Bad Request",
+                        "description": "Пример: {\"message\":\"Wrong uuid input\",\"info\":\"you must enter a 36-character uuid\"}",
                         "schema": {
                             "$ref": "#/definitions/models.ErrorResponse"
                         }
                     },
                     "500": {
-                        "description": "Internal Server Error",
+                        "description": "Пример: {\"message\":\"Database error\",\"error\":\"connection refused\"}",
+
                         "schema": {
                             "$ref": "#/definitions/models.ErrorResponse"
                         }

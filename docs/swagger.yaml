@@ -27,49 +27,63 @@ paths:
     get:
       consumes:
       - application/json
-      description: Требует валидного accessToken. В результате возвращает uuid под
-        которым пользователь получал токены
+
+      description: Получение GUID текущего авторизованного пользователя
+
       produces:
       - application/json
       responses:
         "200":
-          description: OK
+
+          description: 'Пример: {"uuid":"16763be4-6022-406e-a950-fcd5018633ca"}'
           schema:
-            properties:
-              uuid:
-                type: string
             type: object
         "401":
-          description: Unauthorized
+          description: 'Пример: {"error":"Invalid token format, token should have
+            `Bearer ` prefix"}'
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: 'Пример: {"message":"failed to extract claims"}'
+
           schema:
             $ref: '#/definitions/models.ErrorResponse'
       security:
       - BearerAuth: []
-      summary: Получить GUID пользователя (защищенный роут)
+
+      summary: Получить GUID
+
       tags:
       - User
   /logout:
     post:
       consumes:
       - application/json
-      description: Инвалидирует токены пользователя.
+
+      description: Инвалидация текущих токенов пользователя
+
       produces:
       - application/json
       responses:
         "200":
-          description: OK
+          description: 'Пример: {"message":"Logout successfuly!"}'
           schema:
             properties:
               message:
                 type: string
             type: object
         "401":
-          description: Unauthorized
+          description: 'Пример: {"message":"access token not found"}'
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: 'Пример: {"message":"logout failed"}'
           schema:
             $ref: '#/definitions/models.ErrorResponse'
       security:
       - BearerAuth: []
-      summary: Выйти из системы
+
+      summary: Выход из системы
       tags:
       - Auth
   /refresh:
@@ -86,20 +100,27 @@ paths:
         name: request
         required: true
         schema:
-          type: object
+
+          $ref: '#/definitions/models.Tokens'
       produces:
       - application/json
       responses:
         "200":
-          description: OK
+
+          description: 'Пример: {"access_token":"eyJ...","refresh_token":"bmV3IHJlZnJlc..."}'
           schema:
             $ref: '#/definitions/models.Tokens'
         "403":
-          description: Forbidden
+          description: 'Пример: {"message":"wrong pair of tokens"}'
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "409":
+          description: 'Пример: {"message":"error you changed user-agent content"}'
           schema:
             $ref: '#/definitions/models.ErrorResponse'
         "500":
-          description: Internal Server Error
+          description: 'Пример: {"message":"token generation error"}'
+
           schema:
             $ref: '#/definitions/models.ErrorResponse'
       security:
@@ -111,9 +132,11 @@ paths:
     get:
       consumes:
       - application/json
+
       description: Эндпоинт для получения пары токенов для авторизации на сервисе.
         В ответе возвращаются пара токенов, а accessToken также записывается  в заголовок
         `Authorization`.
+
       parameters:
       - description: User GUID
         example: 16763be4-6022-406e-a950-fcd5018633ca
@@ -126,22 +149,25 @@ paths:
       - application/json
       responses:
         "200":
-          description: OK
+          description: 'Пример: {"access_token":"eyJ...","refresh_token":"bmV3IHJlZnJlc..."}'
           headers:
             Authorization:
-              description: JWT access token
+              description: 'Пример: Bearer eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9...'
+
               type: string
           schema:
             $ref: '#/definitions/models.Tokens'
         "400":
-          description: Bad Request
+          description: 'Пример: {"message":"Wrong uuid input","info":"you must enter
+            a 36-character uuid"}'
           schema:
             $ref: '#/definitions/models.ErrorResponse'
         "500":
-          description: Internal Server Error
+          description: 'Пример: {"message":"Database error","error":"connection refused"}'
           schema:
             $ref: '#/definitions/models.ErrorResponse'
-      summary: Получить пару токенов (access + refresh)
+      summary: Получить пару токенов
+
       tags:
       - Auth
 securityDefinitions:
