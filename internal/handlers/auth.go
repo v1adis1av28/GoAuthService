@@ -28,6 +28,7 @@ func NewUserHandler(service *auth.UserService) *UserHandler {
 	return &UserHandler{service: service}
 }
 
+
 // @Summary Выход из системы
 // @Description Инвалидация текущих токенов пользователя
 // @Tags Auth
@@ -69,6 +70,7 @@ func (h *UserHandler) Logout(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Logout successfuly!"})
 
 }
+
 
 // @Summary Получить пару токенов
 // @Description Получение access и refresh токенов. Если пользователя нет - он создается.
@@ -124,6 +126,7 @@ func (h *UserHandler) GetTokenPair(c *gin.Context) {
 		"refresh_token": refreshToken,
 	})
 }
+
 
 // @Summary Обновить токены
 // @Description Обновление пары токенов по refresh токену
@@ -238,6 +241,7 @@ func (h *UserHandler) UpdateIp(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"message": "ip was successfuly updated"})
 }
+
 
 // @Summary Получить GUID
 // @Description Получение GUID текущего авторизованного пользователя
