@@ -7,7 +7,7 @@
 # Склонируйте репозиторий
 git clone https://github.com/v1adis1av28/GoAuthService.git
 # Перейдите в директорию с докером для запуска
-cd GoAuthService/docker
+cd GoAuthService && cd docker
 
 # Запуск сервиса
 docker-compose -f docker-compose.yml up -d
