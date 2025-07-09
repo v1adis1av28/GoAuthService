@@ -22,6 +22,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
+
                 "description": "Получение GUID текущего авторизованного пользователя",
                 "consumes": [
                     "application/json"
@@ -48,6 +49,7 @@ const docTemplate = `{
                     },
                     "500": {
                         "description": "Пример: {\"message\":\"failed to extract claims\"}",
+
                         "schema": {
                             "$ref": "#/definitions/models.ErrorResponse"
                         }
@@ -72,6 +74,7 @@ const docTemplate = `{
                 "tags": [
                     "Auth"
                 ],
+
                 "summary": "Выход из системы",
                 "responses": {
                     "200": {
@@ -86,6 +89,7 @@ const docTemplate = `{
                         }
                     },
                     "401": {
+
                         "description": "Пример: {\"message\":\"access token not found\"}",
                         "schema": {
                             "$ref": "#/definitions/models.ErrorResponse"
@@ -108,6 +112,7 @@ const docTemplate = `{
                     }
                 ],
                 "description": "Обновление пары токенов по refresh токену",
+
                 "consumes": [
                     "application/json"
                 ],
@@ -202,6 +207,7 @@ const docTemplate = `{
                     },
                     "500": {
                         "description": "Пример: {\"message\":\"Database error\",\"error\":\"connection refused\"}",
+
                         "schema": {
                             "$ref": "#/definitions/models.ErrorResponse"
                         }

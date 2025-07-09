@@ -193,8 +193,8 @@
                             "$ref": "#/definitions/models.ErrorResponse"
                         }
                     },
-                    "500": {
-                        "description": "Пример: {\"message\":\"Database error\",\"error\":\"connection refused\"}",
+                    "500": {                        "description": "Пример: {\"message\":\"Database error\",\"error\":\"connection refused\"}",
+
                         "schema": {
                             "$ref": "#/definitions/models.ErrorResponse"
                         }
