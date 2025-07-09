@@ -6,6 +6,8 @@ import (
 	"GoAuthService/internal/service/auth"
 	"GoAuthService/internal/util"
 	"bytes"
+	"crypto/sha256"
+	"crypto/subtle"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -142,56 +144,53 @@ func (h *UserHandler) GetTokenPair(c *gin.Context) {
 // @Router /refresh [post]
 func (h *UserHandler) RefreshTokens(c *gin.Context) {
 	accessToken := strings.TrimPrefix(c.GetHeader("Authorization"), "Bearer ")
-	if accessToken == "" {
-		c.JSON(http.StatusUnauthorized, gin.H{"message": "access token not found"})
-		return
-	}
-	userInfo, err := jwt.ExtractUUIDFromClaims(accessToken)
+
+	userGuid, err := jwt.ExtractUUIDFromClaims(accessToken)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
-		return
-	}
-	user, err := h.service.GetUserByUUID(userInfo)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
-		return
-	}
-	userAgent, err := jwt.ExtractUAFromClaims(accessToken)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid access token"})
 		return
 	}
 
-	if !util.CheckUAIdentity(c.GetHeader("User-Agent"), userAgent) {
-		h.Logout(c)
-		c.JSON(http.StatusConflict, gin.H{"message": "error you changed user-agent content"})
-		return
-	}
-
-	currentIp := c.ClientIP()
-	if isIpChanged(user.LastUserIp, currentIp) {
-		go h.sendWebhook(user.GUID, user.LastUserIp, currentIp)
-	}
-
-	var refreshToken struct {
+	var req struct {
 		RefreshToken string `json:"refresh_token"`
 	}
-
-	if err := c.ShouldBindJSON(&refreshToken); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "Error while getting refresh token"})
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request"})
 		return
 	}
 
-	tokenErr := bcrypt.CompareHashAndPassword([]byte(user.HashedRefreshToken), []byte(refreshToken.RefreshToken))
-	if tokenErr != nil {
-		c.JSON(http.StatusForbidden, gin.H{"message": "wrong pair of tokens"})
-		return
-	}
-	newAccess, newRefresh, err := h.service.GenerateNewTokenPair(user.GUID, userAgent)
+	storedAccessHash, storedRefreshHash, err := h.service.GenerateNewTokenPair(userGuid, c.Request.UserAgent())
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to verify tokens"})
 		return
 	}
+
+	currentAccessHash := sha256.Sum256([]byte(accessToken))
+	if subtle.ConstantTimeCompare([]byte(storedAccessHash), currentAccessHash[:]) != 1 {
+		c.JSON(http.StatusForbidden, gin.H{"error": "invalid access token"})
+		return
+	}
+
+	if err := bcrypt.CompareHashAndPassword([]byte(storedRefreshHash), []byte(req.RefreshToken)); err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"error": "invalid refresh token"})
+		return
+	}
+
+	newAccess, newRefresh, err := h.service.GenerateNewTokenPair(userGuid, c.GetHeader("User-Agent"))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to generate tokens"})
+		return
+	}
+
+	if !util.CheckUAIdentity(c.GetHeader("User-Agent"), c.Request.UserAgent()) {
+		// Удаляем все токены пользователя
+		if err := h.service.DeleteAllTokens(userGuid); err != nil {
+			log.Printf("failed to invalidate tokens: %v", err)
+		}
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "session expired"})
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"access_token":  newAccess,
 		"refresh_token": newRefresh,
