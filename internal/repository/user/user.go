@@ -15,6 +15,14 @@ type UserRepository struct {
 	db *pgx.Conn
 }
 
+func (ur *UserRepository) DeleteAllUserTokens(guid string) error {
+	_, err := ur.db.Exec(context.Background(), "DELETE FROM USER_TOKENS WHERE GUID = $1", guid)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (ur *UserRepository) UpdateIp(guid string, currentIp string) error {
 	_, err := ur.db.Exec(context.Background(), "UPDATE USERS SET last_ip = $1 WHERE guid = $2",
 		currentIp, guid,
@@ -79,4 +87,21 @@ func (u *UserRepository) FindUserByUUID(uuid string) (*models.User, error) {
 
 func NewUserRepository(db *pgx.Conn) *UserRepository {
 	return &UserRepository{db: db}
+}
+
+func (ur *UserRepository) SaveTokenPair(userID, accessTokenHash, refreshTokenHash string) error {
+	sqlstatment := "INSERT INTO user_tokens (user_id, access_token_hash, refresh_token_hash) VALUES ($1, $2, $3) ON CONFLICT (user_id) DO UPDATE SET access_token_hash = $2, refresh_token_hash = $3"
+	_, err := ur.db.Exec(
+		context.Background(), sqlstatment,
+		userID, accessTokenHash, refreshTokenHash,
+	)
+	return err
+}
+
+func (ur *UserRepository) GetTokenPair(userID string) (accessTokenHash, refreshTokenHash string, err error) {
+	err = ur.db.QueryRow(context.Background(),
+		`SELECT access_token_hash, refresh_token_hash FROM user_tokens WHERE user_id = $1`,
+		userID,
+	).Scan(&accessTokenHash, &refreshTokenHash)
+	return
 }

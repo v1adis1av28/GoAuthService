@@ -5,6 +5,7 @@ import (
 	"GoAuthService/internal/models"
 	"GoAuthService/internal/repository/user"
 	"crypto/rand"
+	"crypto/sha256"
 	"encoding/base64"
 
 	"golang.org/x/crypto/bcrypt"
@@ -14,6 +15,10 @@ var tokenByteSize = 20
 
 type UserService struct {
 	repo *user.UserRepository
+}
+
+func (u *UserService) DeleteAllTokens(guid string) error {
+	return u.repo.DeleteAllUserTokens()
 }
 
 func (u *UserService) UpdateIp(guid string, currentIp string) error {
@@ -66,19 +71,20 @@ func generateRefreshToken() (string, error) {
 }
 
 func (u *UserService) GenerateNewTokenPair(guid, userAgent string) (string, string, error) {
-	refreshToken, err := generateRefreshToken()
-	if err != nil {
-		return "", "", err
-	}
-
-	hashedRefreshToken, _ := bcrypt.GenerateFromPassword([]byte(refreshToken), bcrypt.DefaultCost)
-
 	accessToken, err := jwt.GenerateNewJwtKey(guid, userAgent)
 	if err != nil {
 		return "", "", err
 	}
 
-	err = u.repo.UpdateRefreshToken(guid, string(hashedRefreshToken))
+	refreshToken, err := generateRefreshToken()
+	if err != nil {
+		return "", "", err
+	}
+
+	hashedAccess := sha256.Sum256([]byte(accessToken))
+	hashedRefresh, _ := bcrypt.GenerateFromPassword([]byte(refreshToken), bcrypt.DefaultCost)
+
+	err = u.repo.SaveTokenPair(guid, string(hashedAccess[:]), string(hashedRefresh))
 	if err != nil {
 		return "", "", err
 	}

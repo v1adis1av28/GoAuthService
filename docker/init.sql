@@ -7,3 +7,10 @@ CREATE TABLE IF NOT EXISTS users (
     expires_at TIMESTAMP,
     last_ip varchar(64)
 );
+
+CREATE TABLE IF NOT EXISTS user_tokens(
+    id SERIAL PRIMARY KEY,
+    GUID VARCHAR(40) NOT NULL,
+    hashed_refresh_token VARCHAR(120) NOT NULL,
+    hashed_access_token VARCHAR(120) NOT NULL
+);
